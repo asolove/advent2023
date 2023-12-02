@@ -1,0 +1,100 @@
+export type PartialParse<A> = { value: A; rest: string };
+export type Parser<A> = (input: string) => Iterable<PartialParse<A>>;
+
+export function result<A>(value: A): Parser<A> {
+  return function* (input: string) {
+    yield { value, rest: input };
+  };
+}
+
+export const zero: Parser<never> = (_input: string) => {
+  return [][Symbol.iterator]();
+};
+
+export function* item(input: string): Iterable<PartialParse<string>> {
+  if (input[0]) {
+    yield { value: input[0], rest: input.slice(1) };
+  } else {
+    yield* zero(input);
+  }
+}
+
+export function bind<A, B>(
+  p1: Parser<A>,
+  next: (a: A) => Parser<B>
+): Parser<B> {
+  return function* (input: string) {
+    for (const { value, rest } of p1(input)) {
+      yield* next(value)(rest);
+    }
+  };
+}
+
+export function map<A, B>(p1: Parser<A>, transform: (a: A) => B): Parser<B> {
+  return bind(p1, (a) => result(transform(a)));
+}
+
+export function seq<A, B>(p1: Parser<A>, p2: Parser<B>): Parser<[A, B]> {
+  return bind(p1, (a) => bind(p2, (b) => result([a, b])));
+}
+
+export function sat(test: (string) => boolean): Parser<string> {
+  return bind(item, (ch: string) => {
+    if (test(ch)) {
+      return result(ch);
+    } else {
+      return zero;
+    }
+  });
+}
+
+export const char = (ch: string) => sat((x) => x === ch);
+export const digit = sat((x) => x >= "0" && x <= "9");
+export const upper = sat((x) => x >= "A" && x <= "Z");
+export const lower = sat((x) => x >= "a" && x <= "z");
+export const alpha = plus(upper, lower);
+export const int: Parser<number> = bind(many1(digit), (chars: string[]) =>
+  result(parseInt(chars.join(""), 10))
+);
+
+export function string<A extends string>(st: A): Parser<A> {
+  return function* (input: string) {
+    if (input.slice(0, st.length) === st) {
+      yield { value: st, rest: input.slice(st.length) };
+    } else {
+      return zero;
+    }
+  };
+}
+
+export function many<A>(p: Parser<A>): Parser<A[]> {
+  return plus(
+    bind(p, (r1) => {
+      return bind(many(p), (rs) => {
+        return result([r1, ...rs]);
+      });
+    }),
+    result([])
+  );
+}
+
+export function many1<A>(p: Parser<A>): Parser<A[]> {
+  return bind(p, (r1) => {
+    return bind(many(p), (rs) => {
+      return result([r1, ...rs]);
+    });
+  });
+}
+
+export function plus<A>(p1: Parser<A>, p2: Parser<A>): Parser<A> {
+  return function* (input: string) {
+    yield* p1(input);
+    yield* p2(input);
+  };
+}
+
+export function separatedBy<A, B>(p: Parser<A>, sep: Parser<B>): Parser<A[]> {
+  return map(seq(many(seq(p, sep)), p), (rs) =>
+    rs[0].map((r) => r[0]).concat(rs[1])
+  );
+}
