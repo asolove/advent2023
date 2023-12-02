@@ -1,8 +1,6 @@
 import {
   char,
   int,
-  many,
-  many1,
   map,
   Parser,
   plus,
@@ -12,15 +10,17 @@ import {
 } from "../lib/parse";
 import { input, merge, product, sum } from "../lib/";
 
+// Representation types
+
 type Color = "green" | "red" | "blue";
 
-type Pull = {
+type DieSet = {
   [C in Color]?: number;
 };
 
 type Game = {
   id: number;
-  pulls: Pull[];
+  pulls: DieSet[];
 };
 
 // Parse input
@@ -29,12 +29,16 @@ const color: Parser<Color> = plus(
   string("red"),
   plus(string("green"), string("blue"))
 );
-const colorCount: Parser<Pull> = map(seq(int, seq(char(" "), color)), (r) => ({
-  [r[1][1]]: r[0],
-}));
+const colorCount: Parser<DieSet> = map(
+  seq(int, seq(char(" "), color)),
+  (r) => ({
+    [r[1][1]]: r[0],
+  })
+);
 
-const pull: Parser<Pull> = map(separatedBy(colorCount, string(", ")), (pulls) =>
-  pulls.reduce(merge, {})
+const pull: Parser<DieSet> = map(
+  separatedBy(colorCount, string(", ")),
+  (pulls) => pulls.reduce(merge, {})
 );
 
 const pulls = separatedBy(pull, string("; "));
@@ -53,15 +57,19 @@ const inputGames = (input: string): Game[] => {
   return [];
 };
 
+// IO
+
 const games = inputGames(await input());
 
-const completePull: Pull = {
+// Part 1
+
+const completePull: DieSet = {
   red: 12,
   green: 13,
   blue: 14,
 };
 
-const pullPossible = (pull: Pull): boolean => {
+const pullPossible = (pull: DieSet): boolean => {
   for (const color in completePull) {
     if (pull[color] && pull[color] > completePull[color]) return false;
   }
@@ -76,7 +84,9 @@ console.log(
     .reduce(sum)
 );
 
-const minSet = (game: Game): Pull => {
+// Part 2
+
+const minSet = (game: Game): DieSet => {
   let min = { green: 0, red: 0, blue: 0 };
   game.pulls.forEach((pull) => {
     for (const color in pull) {
@@ -88,7 +98,7 @@ const minSet = (game: Game): Pull => {
   return min;
 };
 
-const power = (pull: Pull) =>
+const power = (pull: DieSet) =>
   Object.entries(pull)
     .map((r) => r[1])
     .reduce(product, 1);
