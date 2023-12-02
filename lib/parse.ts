@@ -1,3 +1,8 @@
+// A tiny monadic parser for quickly doing AoC
+//
+// A big thanks to Kris for [TDPTSNBN](https://www.youtube.com/watch?v=Q1YXEqCl650)
+// And to Hutton, Meijer for [Monadic Parser Combinators](https://www.cs.nott.ac.uk/~pszgmh/monparsing.pdf)
+
 export type PartialParse<A> = { value: A; rest: string };
 export type Parser<A> = (input: string) => Iterable<PartialParse<A>>;
 
