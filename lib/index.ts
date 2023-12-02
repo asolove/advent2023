@@ -11,5 +11,6 @@ export let inputLines = async function () {
 };
 
 export let sum = (a, b) => a + b;
+export let product = (a, b) => a * b;
 
 export let merge = (a, b) => ({ ...a, ...b });

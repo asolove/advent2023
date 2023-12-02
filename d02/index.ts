@@ -10,7 +10,7 @@ import {
   seq,
   string,
 } from "../lib/parse";
-import { input, merge, sum } from "../lib/";
+import { input, merge, product, sum } from "../lib/";
 
 type Color = "green" | "red" | "blue";
 
@@ -69,8 +69,28 @@ const pullPossible = (pull: Pull): boolean => {
 };
 
 console.log(
+  "Part 1:",
   games
     .filter((game) => game.pulls.every(pullPossible))
     .map((game) => game.id)
     .reduce(sum)
 );
+
+const minSet = (game: Game): Pull => {
+  let min = { green: 0, red: 0, blue: 0 };
+  game.pulls.forEach((pull) => {
+    for (const color in pull) {
+      if (pull[color] > min[color]) {
+        min[color] = pull[color];
+      }
+    }
+  });
+  return min;
+};
+
+const power = (pull: Pull) =>
+  Object.entries(pull)
+    .map((r) => r[1])
+    .reduce(product, 1);
+
+console.log("Part 2: ", games.map(minSet).map(power).reduce(sum));
