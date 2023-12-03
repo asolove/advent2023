@@ -121,7 +121,7 @@ console.log(
   "Part 2",
   allItems
     .filter(isGear)
-    .map((i) => neighborItems(i).filter(isNumber))
+    .map((g) => neighborItems(g).filter(isNumber))
     .filter((ns) => ns.length === 2)
     .map((ns) => ns[0].value * ns[1].value)
     .reduce(sum)
