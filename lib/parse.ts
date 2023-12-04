@@ -6,6 +6,13 @@
 export type PartialParse<A> = { value: A; rest: string };
 export type Parser<A> = (input: string) => Iterable<PartialParse<A>>;
 
+export function parse<A>(parser: Parser<A>, input: string): A {
+  for (const result of parser(input)) {
+    return result.value;
+  }
+  throw new Error("no results for parse");
+}
+
 export function result<A>(value: A): Parser<A> {
   return function* (input: string) {
     yield { value, rest: input };
