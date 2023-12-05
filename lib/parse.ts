@@ -90,6 +90,10 @@ export function many<A>(p: Parser<A>): Parser<A[]> {
   );
 }
 
+export const line = map(seq(many(sat((c) => c != "\n")), char("\n")), (r) =>
+  [...r[0], r[1]].join("")
+);
+
 export function many1<A>(p: Parser<A>): Parser<A[]> {
   return bind(p, (r1) => {
     return bind(many(p), (rs) => {
