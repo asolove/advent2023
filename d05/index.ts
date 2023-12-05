@@ -1,4 +1,4 @@
-import { input, min, sum } from "../lib";
+import { input, min, sum, tap } from "../lib";
 import {
   Parser,
   char,
@@ -48,7 +48,7 @@ let lookup = (source: number, map: Map): number => {
   for (let m of map.mappings) {
     if (
       source >= m.sourceRangeStart &&
-      source <= m.sourceRangeStart + m.rangeLength
+      source < m.sourceRangeStart + m.rangeLength
     ) {
       return m.destinationRangeStart + (source - m.sourceRangeStart);
     }
@@ -66,51 +66,34 @@ console.log(
 
 // Part 2
 
+// Overview: we're going to keep track
+
 type Range = { start: number; len: number };
 
+let includes = (range: Range, location: number) =>
+  location > range.start && location < range.start + range.len;
+
+let splitRange = (range: Range, location: number): Range[] =>
+  includes(range, location)
+    ? [
+        { start: range.start, len: location - range.start },
+        { start: location, len: range.start + range.len - location },
+      ]
+    : [range];
+
+let splitRanges = (ranges: Range[], location: number) =>
+  ranges.flatMap((range) => splitRange(range, location));
+
 let lookupRange = (source: Range, map: Map): Range[] => {
-  let sourceStart = source.start;
-  let sourceLength = source.len;
-
-  let results: Range[] = [];
-
-  for (var i = 0; i < map.mappings.length; i++) {
-    let m = map.mappings[i];
-
-    if (sourceLength === 0) break;
-    if (
-      results.length === 0 &&
-      m.sourceRangeStart + m.rangeLength < sourceStart
-    )
-      continue;
-
-    if (sourceStart < m.sourceRangeStart) {
-      let missingLen = Math.min(sourceLength, m.sourceRangeStart - sourceStart);
-      results.push({ start: sourceStart, len: missingLen });
-    }
-
-    if (sourceStart + sourceLength < m.sourceRangeStart) {
-      break; // we're past the mappings for our range
-    }
-
-    let overlapStart = Math.max(sourceStart, m.sourceRangeStart);
-    let overlapEnd = Math.min(
-      sourceStart + sourceLength,
+  let sourceRanges: Range[] = [source];
+  map.mappings.forEach((m) => {
+    sourceRanges = splitRanges(sourceRanges, m.sourceRangeStart);
+    sourceRanges = splitRanges(
+      sourceRanges,
       m.sourceRangeStart + m.rangeLength
     );
-    let mappedStart =
-      m.destinationRangeStart + (overlapStart - m.sourceRangeStart);
-    results.push({ start: mappedStart, len: overlapEnd - overlapStart });
-
-    sourceStart = overlapEnd;
-    sourceLength -= overlapEnd - overlapStart;
-  }
-
-  if (sourceLength > 0) {
-    results.push({ start: sourceStart, len: sourceLength });
-  }
-
-  return results;
+  });
+  return sourceRanges.map((r) => ({ start: lookup(r.start, map), len: r.len }));
 };
 
 let seedRanges: Range[] = [];

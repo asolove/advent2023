@@ -26,3 +26,8 @@ export function isPresent<A>(a: A | undefined): a is A {
 export let isDigit = (c) => c >= "0" && c <= "9";
 
 export let min = (a, b) => Math.min(a, b);
+
+export let tap = (name, value) => {
+  console.log(name, value);
+  return value;
+};
