@@ -66,7 +66,13 @@ console.log(
 
 // Part 2
 
-// Overview: we're going to keep track
+// Overview: we're going to keep track of ranges of numbers, rather than single values,
+// as they flow through the mappings. Given an input range and a set of mapping ranges,
+// we can split the input into sub-ranges for each mapping:
+//   Input range:      10-20
+//   Mapping:        5-15, 15-30
+//   Output ranges: 10-15, 15-20
+// And then map each output ranges through the mapping rules.
 
 type Range = { start: number; len: number };
 
