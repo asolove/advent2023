@@ -1,4 +1,4 @@
-import { input, min } from "../lib";
+import { input, min, sum } from "../lib";
 import {
   Parser,
   char,
@@ -34,7 +34,7 @@ let aMap: Parser<Map> = map(
   seq(line, separatedBy(mapEntry, char("\n"))),
   (r) => ({
     name: r[0].replace(" map:\n", ""),
-    mappings: r[1],
+    mappings: r[1].sort((a, b) => a.sourceRangeStart - b.sourceRangeStart),
   })
 );
 let allMaps = separatedBy(aMap, string("\n\n"));
@@ -65,21 +65,68 @@ console.log(
 );
 
 // Part 2
-// There is a more principled way by tracking overlapping ranges,
-// but I'm going to brute-force it.
-let seedsByRange: number[] = [];
-for (let i = 0; i < seeds.length; i = i + 2) {
-  for (let j = seeds[i]; j < seeds[i] + seeds[i + 1]; j++) {
-    seedsByRange.push(j);
+
+type Range = { start: number; len: number };
+
+let lookupRange = (source: Range, map: Map): Range[] => {
+  let sourceStart = source.start;
+  let sourceLength = source.len;
+
+  let results: Range[] = [];
+
+  for (var i = 0; i < map.mappings.length; i++) {
+    let m = map.mappings[i];
+
+    if (sourceLength === 0) break;
+    if (
+      results.length === 0 &&
+      m.sourceRangeStart + m.rangeLength < sourceStart
+    )
+      continue;
+
+    if (sourceStart < m.sourceRangeStart) {
+      let missingLen = Math.min(sourceLength, m.sourceRangeStart - sourceStart);
+      results.push({ start: sourceStart, len: missingLen });
+    }
+
+    if (sourceStart + sourceLength < m.sourceRangeStart) {
+      break; // we're past the mappings for our range
+    }
+
+    let overlapStart = Math.max(sourceStart, m.sourceRangeStart);
+    let overlapEnd = Math.min(
+      sourceStart + sourceLength,
+      m.sourceRangeStart + m.rangeLength
+    );
+    let mappedStart =
+      m.destinationRangeStart + (overlapStart - m.sourceRangeStart);
+    results.push({ start: mappedStart, len: overlapEnd - overlapStart });
+
+    sourceStart = overlapEnd;
+    sourceLength -= overlapEnd - overlapStart;
   }
+
+  if (sourceLength > 0) {
+    results.push({ start: sourceStart, len: sourceLength });
+  }
+
+  return results;
+};
+
+let seedRanges: Range[] = [];
+let total = 0;
+for (let i = 0; i < seeds.length; i = i + 2) {
+  total += seeds[i + 1];
+  seedRanges.push({ start: seeds[i], len: seeds[i + 1] });
 }
 
 console.log(
   "Part 2:",
   maps
     .reduce(
-      (values, map) => values.map((value) => lookup(value, map)),
-      seedsByRange
+      (ranges, map) => ranges.flatMap((range) => lookupRange(range, map)),
+      seedRanges
     )
+    .map((r) => r.start)
     .reduce(min)
 );
