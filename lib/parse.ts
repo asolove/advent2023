@@ -65,6 +65,7 @@ export const digit = sat((x) => x >= "0" && x <= "9");
 export const upper = sat((x) => x >= "A" && x <= "Z");
 export const lower = sat((x) => x >= "a" && x <= "z");
 export const alpha = plus(upper, lower);
+export const alphanumeric = plus(alpha, digit);
 export const int: Parser<number> = bind(many1(digit), (chars: string[]) =>
   result(parseInt(chars.join(""), 10))
 );

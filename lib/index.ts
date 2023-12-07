@@ -31,3 +31,17 @@ export let tap = (name, value) => {
   console.log(name, value);
   return value;
 };
+
+export let max = (a, b) => Math.max(a, b);
+
+export function counts<A>(items: A[]): Map<A, number> {
+  let r = new Map();
+  for (let item of items) {
+    if (r.has(item)) {
+      r.set(item, r.get(item) + 1);
+    } else {
+      r.set(item, 1);
+    }
+  }
+  return r;
+}
