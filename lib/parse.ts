@@ -60,7 +60,11 @@ export function sat(test: (string) => boolean): Parser<string> {
   });
 }
 
-export const char = (ch: string) => sat((x) => x === ch);
+export function char<A extends string>(ch: A): Parser<A> {
+  return sat(function (s: string): s is A {
+    return s === ch;
+  }) as Parser<A>; // FIXME: can we thread the type assertion through sat and bind?
+}
 export const digit = sat((x) => x >= "0" && x <= "9");
 export const upper = sat((x) => x >= "A" && x <= "Z");
 export const lower = sat((x) => x >= "a" && x <= "z");
@@ -112,6 +116,14 @@ export function plus<A>(p1: Parser<A>, p2: Parser<A>): Parser<A> {
 
 export function separatedBy<A, B>(p: Parser<A>, sep: Parser<B>): Parser<A[]> {
   return map(seq(many(seq(p, sep)), p), (rs) =>
-    rs[0].map((r) => r[0]).concat(rs[1])
+    rs[0].map((r) => r[0]).concat([rs[1]])
   );
+}
+
+export function surroundedBy<A, B, C>(
+  p: Parser<A>,
+  before: Parser<B>,
+  after: Parser<C>
+): Parser<A> {
+  return map(seq(before, seq(p, after)), (r) => r[1][0]);
 }
