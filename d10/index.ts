@@ -139,7 +139,7 @@ const color = (x: number, y: number, c: Color) => {
     case Color.Left:
     case Color.Right:
       if (currentColor !== c)
-        throw new Error(
+        console.log(
           `Double-assigning color for (${x}, ${y}): was ${currentColor}, trying to assign ${c}`
         );
     case Color.Unknown:
@@ -163,11 +163,62 @@ while (current.prev) {
       color(x, y - 1, from == Dir.Left ? Color.Left : Color.Right);
       color(x, y + 1, from == Dir.Right ? Color.Left : Color.Right);
       break;
-  }
-  if (map[current.y][current.x] === "|") {
+    // "L" | "J" | "7" | "F"
+    case "L":
+      var c = from === Dir.Right ? Color.Left : Color.Right;
+      color(x, y + 1, c);
+      color(x - 1, y + 1, c);
+      color(x - 1, y, c);
+      break;
+    case "J":
+      var c = from === Dir.Left ? Color.Right : Color.Left;
+      color(x, y + 1, c);
+      color(x + 1, y + 1, c);
+      color(x + 1, y, c);
+      break;
+    case "7":
+      var c = from === Dir.Left ? Color.Left : Color.Right;
+      color(x, y - 1, c);
+      color(x + 1, y - 1, c);
+      color(x + 1, y, c);
+      break;
+    case "F":
+      var c = from === Dir.Down ? Color.Left : Color.Right;
+      color(x, y - 1, c);
+      color(x - 1, y - 1, c);
+      color(x - 1, y, c);
+      break;
   }
 }
 
-console.log(coloring.map((l) => l.join("")).join("\n"));
+let colorToCopy = (c: Color) => c == Color.Left || c == Color.Right;
 
-// Union together neighbors
+// Fill in the holes
+for (let k = 0; k < 1000; k++) {
+  for (let y = 1; y < map.length - 1; y++) {
+    for (let x = 1; x < map[y].length - 1; x++) {
+      if (coloring[y][x] !== 0) continue;
+
+      [
+        [1, 1],
+        [1, -1],
+        [-1, 1],
+        [-1, -1],
+      ]
+        .map(([dy, dx]) => [x, y, coloring[y + dy][x + dx]])
+        .filter(([x, y, c]) => colorToCopy(c))
+        .forEach(([x, y, c]) => color(x, y, c));
+    }
+  }
+}
+
+let diagram = coloring.map((l) => l.join("")).join("\n");
+
+let insideColor = Color.Left;
+let count = 0;
+for (let i = 0; i < diagram.length; i++) {
+  if (diagram[i] === insideColor.toString()) count++;
+}
+
+console.log(diagram);
+console.log("Part 2", count);
