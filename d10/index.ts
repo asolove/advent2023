@@ -220,5 +220,4 @@ for (let i = 0; i < diagram.length; i++) {
   if (diagram[i] === insideColor.toString()) count++;
 }
 
-console.log(diagram);
 console.log("Part 2", count);

@@ -45,3 +45,26 @@ export function counts<A>(items: A[]): Map<A, number> {
   }
   return r;
 }
+
+export function pairs<A>(items: A[]): [A, A][] {
+  let r: [A, A][] = [];
+  for (let i = 0; i < items.length; i++) {
+    for (let j = 0; j != i && j < items.length; j++) {
+      r.push([items[i], items[j]]);
+    }
+  }
+  return r;
+}
+
+export function transpose<A>(items: A[][]): A[][] {
+  let r: A[][] = [];
+
+  for (let j = 0; j < items[0].length; j++) {
+    r[j] = [];
+    for (let i = 0; i < items.length; i++) {
+      r[j][i] = items[i][j];
+    }
+  }
+
+  return r;
+}
