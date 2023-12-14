@@ -50,6 +50,77 @@ let matchCount = (s: string, expected: Expected): number => {
   return matching.length;
 };
 
-console.log("Part 1", puzzle.map(([s, e]) => matchCount(s, e)).reduce(sum));
+let fasterMatchCount = (
+  actual: string,
+  runs: number[],
+  i: number = 0,
+  r: number = 0
+): number => {
+  let table = new Array(actual.length + 1)
+    .fill([])
+    .map((_x) => new Array(runs.length + 1).fill(NaN));
 
-// Part 2: requires redoing this, write a dynamic programming-like matcher...
+  let memo = (i, r) => {
+    let result;
+    try {
+      result = table[i][r];
+    } catch {
+      result = NaN;
+    }
+    if (isNaN(result)) {
+      result = calc(i, r);
+      if (i <= actual.length && r <= runs.length) table[i][r] = result;
+    }
+    return result;
+  };
+
+  let calc = (i, r) => {
+    // console.log(actual.length - i, runs.length);
+    // If we're out of observations, it was a success iff we're also at end of runs
+    if (i > actual.length) return r >= runs.length ? 1 : 0;
+    // If we're at end of runs, it was a success iff the rest can all be fine.
+    if (runs.length - r === 0) return actual.lastIndexOf("#") < i ? 1 : 0;
+
+    if (actual[i] === ".") return memo(i + 1, r);
+    if (actual[i] === "#") {
+      let run = runs[r];
+      return run <= actual.length - i &&
+        actual.slice(i, i + run).indexOf(".") === -1 &&
+        actual[i + run] !== "#"
+        ? memo(i + run + 1, r + 1)
+        : 0;
+    }
+    let matchesAsDot = memo(i + 1, r);
+    let run = runs[r];
+    let matchesAsHash =
+      run <= actual.length - i &&
+      actual.slice(i, i + run).indexOf(".") === -1 &&
+      actual[i + run] !== "#"
+        ? memo(i + run + 1, r + 1)
+        : 0;
+    return matchesAsDot + matchesAsHash;
+  };
+  return memo(0, 0);
+};
+
+console.log(
+  "Part 1",
+  puzzle.map(([s, e]) => fasterMatchCount(s, e)).reduce(sum)
+);
+
+// Part 2:
+
+let lengthen = ([s, e]): [string, Expected] => {
+  let e2: Expected = new Array(e.length * 5)
+    .fill(0)
+    .map((_x, i) => e[i % e.length]);
+  return [new Array(5).fill(s).join("?"), e2];
+};
+
+console.log(
+  "Part 2",
+  puzzle
+    .map(lengthen)
+    .map(([s, e]) => fasterMatchCount(s, e))
+    .reduce(sum)
+);
