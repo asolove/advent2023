@@ -31,13 +31,15 @@ let matches = (
     };
 
   let calc = memo((i, r) => {
-    // console.log(actual.length - i, runs.length);
     // If we're out of observations, it was a success iff we're also at end of runs
     if (i > actual.length) return r >= runs.length ? 1 : 0;
     // If we're at end of runs, it was a success iff the rest can all be fine.
     if (runs.length - r === 0) return actual.lastIndexOf("#") < i ? 1 : 0;
 
+    // If this space is a dot, skip it and match a run starting at next
     let matchesAsDot = calc(i + 1, r);
+
+    // If this space is a hash, see if we can consume enough hashes to make up this run
     let run = runs[r];
     let matchesAsHash =
       run <= actual.length - i &&
@@ -45,6 +47,7 @@ let matches = (
       actual[i + run] !== "#"
         ? calc(i + run + 1, r + 1)
         : 0;
+
     switch (actual[i]) {
       case ".":
         return matchesAsDot;
@@ -54,6 +57,7 @@ let matches = (
         return matchesAsDot + matchesAsHash;
     }
   });
+
   return calc(0, 0);
 };
 
