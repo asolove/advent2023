@@ -1,4 +1,4 @@
-import { inputLines, minBy } from "../lib";
+import { inputLines } from "../lib";
 
 // Note: I didn't do this totally by myself.
 //
@@ -62,10 +62,11 @@ let neighbors = (node: Node): [Node, number][] => {
     if (d === opp(node.dir) || d === node.dir) continue;
     let dw = 0;
     let c2 = node.c;
-    for (let n = 1; n <= 3; n++) {
+    for (let n = 1; n <= 10; n++) {
       c2 = step(c2, d);
       if (!c2) break;
       dw += grid[c2[0]][c2[1]];
+      if (n < 4) continue;
       ns.push([lookupNode({ c: c2, dir: d }), dw]);
     }
   }
@@ -118,7 +119,7 @@ let endNode: Node = {
   dir: "Random",
   weight: 0,
 };
-console.log(shortestPath(startNode, endNode, neighbors));
+console.log("Part 2", shortestPath(startNode, endNode, neighbors));
 
 class MinHeap<A> {
   items: [number, A][];
@@ -150,12 +151,7 @@ class MinHeap<A> {
     let parent = this.items[parentI];
 
     if (parent[0] > item[0]) {
-      this.items[i] = parent;
-      this.itemIndices.delete(parent[1]);
-      this.itemIndices.set(parent[1], i);
-      this.items[parentI] = item;
-      this.itemIndices.delete(item[1]);
-      this.itemIndices.set(item[1], parentI);
+      this.swap(i, parentI);
       this.swapUp(parentI);
     }
 
