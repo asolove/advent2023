@@ -4,12 +4,14 @@ let grid = (await inputLines()).map((l) => l.split(""));
 
 type Pos = { r: number; c: number };
 
-let canStep = ({ r, c }: Pos): boolean =>
-  r >= 0 &&
-  r < grid.length &&
-  c >= 0 &&
-  c < grid[0].length &&
-  [".", "S"].includes(grid[r][c]);
+let canStep = ({ r, c }: Pos): boolean => {
+  let gridR = r % grid.length;
+  if (gridR < 0) gridR += grid.length;
+  let gridC = c % grid[0].length;
+  if (gridC < 0) gridC += grid[0].length;
+
+  return [".", "S"].includes(grid[gridR][gridC]);
+};
 
 const DIRS = [
   [0, 1],
@@ -29,7 +31,7 @@ let uniq = (ps: Pos[]): Pos[] => {
 
 let nextSteps = (ps: Pos[]): Pos[] => uniq(ps.flatMap(nextStep));
 
-let STEPS = 64;
+let STEPS = 5000;
 let startPositions: Pos[] = [];
 for (let r = 0; r < grid.length; r++) {
   for (let c = 0; c < grid[0].length; c++) {
@@ -39,10 +41,11 @@ for (let r = 0; r < grid.length; r++) {
   }
 }
 
-// Part 1
+// Part 2
 let positions = startPositions;
 for (let i = 0; i < STEPS; i++) {
+  if (i % 131 === 0) console.log(i, positions.length);
   positions = nextSteps(positions);
 }
 
-console.log("Part 1:", positions.length);
+console.log("Part 2:", positions.length);
