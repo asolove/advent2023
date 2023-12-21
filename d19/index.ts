@@ -1,4 +1,4 @@
-import { input, sum } from "../lib";
+import { input, product, sum } from "../lib";
 import {
   Parser,
   alpha,
@@ -15,6 +15,7 @@ import {
 } from "../lib/parse";
 
 type Outcome = "R" | "A";
+type Op = ">" | "<";
 
 let isFinal = (s: string): s is Outcome => s === "R" || s === "A";
 
@@ -22,7 +23,7 @@ type TestRule = {
   type: "test";
   key: string;
   value: number;
-  op: ">" | "<";
+  op: Op;
   dest: string;
 };
 type JumpRule = { type: "jump"; dest: string };
@@ -111,17 +112,105 @@ let naiveEval = (item: Item, workflows: Workflows): Outcome => {
 let itemScore = (i: Item): number => i.x + i.m + i.a + i.s;
 
 console.log(
+  "Part 1",
   parsedFile.items
     .map((item) => naiveEval(item, parsedFile.workflows))
     .map((r, i) => (r === "A" ? itemScore(parsedFile.items[i]) : 0))
     .reduce(sum)
 );
 
-/* 
-Need it to be faster? 
-Ok so here's what I'm thinking: there are a lot of rules and a lot of items.
-So a way to make it fast is, instead of following each rule, to just track 
-the 4-dimensional state space, dividing it along each dimension, so that we
-can just do four lookups to 
+// Part 2
 
-*/
+type Range = [number, number]; // [min, max]
+type State = { x: Range; m: Range; a: Range; s: Range; next: string };
+
+let startState: State = {
+  next: "in",
+  x: [1, 4000],
+  m: [1, 4000],
+  a: [1, 4000],
+  s: [1, 4000],
+};
+
+let acceptedStates: State[] = [];
+
+let opposite = (r: TestRule): TestRule => ({
+  ...r,
+  op: r.op === ">" ? "<" : ">",
+  value: r.op === ">" ? r.value + 1 : r.value - 1,
+});
+
+let constrainRange = (r: Range, op: Op, value: number): Range => {
+  if (op === "<") {
+    if (value < r[1]) return [r[0], value];
+  } else {
+    if (value > r[0]) return [value, r[1]];
+  }
+  return r;
+};
+
+let constrain = (state: State, rule: TestRule): State => {
+  let key = rule.key;
+  let newRange = constrainRange(state[key], rule.op, rule.value);
+  return { ...state, [key]: newRange };
+};
+
+let nextStates = (state: State): State[] => {
+  if (isFinal(state.next)) {
+    if (state.next === "A") acceptedStates.push(state);
+    return [];
+  }
+
+  let nexts: State[] = [];
+  let workflow = parsedFile.workflows[state.next];
+  let current = state;
+
+  workflow.rules.forEach((rule) => {
+    if (rule.type === "jump") {
+      nexts.push({ ...current, next: rule.dest });
+    } else {
+      // if rule is true
+      nexts.push({ ...constrain(current, rule), next: rule.dest });
+      // if rule is false, keep traversing rules
+      current = constrain(current, opposite(rule));
+    }
+  });
+
+  return nexts;
+};
+
+let states: State[] = [startState];
+
+while (states.length > 0) {
+  states = states.flatMap(nextStates);
+}
+
+let stateSize = (s: State) =>
+  ["x", "m", "a", "s"].map((k) => s[k][1] - s[k][0] + 1).reduce(product);
+
+let rangeOverlap = (r1: Range, r2: Range): number => {
+  let oMin = Math.max(r1[0], r2[0]);
+  let oMax = Math.min(r1[1], r2[1]);
+  if (oMin <= oMax) {
+    return oMax - oMin + 1;
+  } else {
+    return 0;
+  }
+};
+
+let stateOverlap = (s1: State, s2: State): number =>
+  ["x", "m", "a", "s"].map((k) => rangeOverlap(s1[k], s2[k])).reduce(product);
+
+let totalArea = acceptedStates.map(stateSize).reduce(sum);
+
+let overlapArea =
+  acceptedStates
+    .map((s1) =>
+      acceptedStates
+        .filter((s2) => s2 !== s1)
+        .map((s2) => stateOverlap(s1, s2))
+        .reduce(sum)
+    )
+    .reduce(sum) / 2;
+
+console.log("Part 2", totalArea, overlapArea, totalArea - overlapArea);
