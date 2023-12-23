@@ -111,8 +111,9 @@ let naiveEval = (item: Item, workflows: Workflows): Outcome => {
 
 let itemScore = (i: Item): number => i.x + i.m + i.a + i.s;
 
+let naiveAccepted: Outcome[] = [];
 console.log(
-  "Part 1",
+  "Part 1a",
   parsedFile.items
     .map((item) => naiveEval(item, parsedFile.workflows))
     .map((r, i) => (r === "A" ? itemScore(parsedFile.items[i]) : 0))
@@ -142,9 +143,11 @@ let opposite = (r: TestRule): TestRule => ({
 
 let constrainRange = (r: Range, op: Op, value: number): Range => {
   if (op === "<") {
-    if (value < r[1]) return [r[0], value];
+    if (value < r[0]) return [0, -1];
+    if (value < r[1]) return [r[0], value - 1];
   } else {
-    if (value > r[0]) return [value, r[1]];
+    if (value > r[1]) return [0, -1];
+    if (value > r[0]) return [value + 1, r[1]];
   }
   return r;
 };
@@ -179,6 +182,8 @@ let nextStates = (state: State): State[] => {
   return nexts;
 };
 
+const DIMs = ["x", "m", "a", "s"];
+
 let states: State[] = [startState];
 
 while (states.length > 0) {
@@ -186,31 +191,59 @@ while (states.length > 0) {
 }
 
 let stateSize = (s: State) =>
-  ["x", "m", "a", "s"].map((k) => s[k][1] - s[k][0] + 1).reduce(product);
+  DIMs.map((k) => s[k][1] - s[k][0] + 1).reduce(product);
 
-let rangeOverlap = (r1: Range, r2: Range): number => {
-  let oMin = Math.max(r1[0], r2[0]);
-  let oMax = Math.min(r1[1], r2[1]);
-  if (oMin <= oMax) {
-    return oMax - oMin + 1;
-  } else {
-    return 0;
+let overlapRange = (r1: Range, r2: Range): Range => [
+  Math.max(r1[0], r2[0]),
+  Math.min(r1[1], r2[1]),
+];
+
+let validOverlap = (s: State) => DIMs.every((d) => s[d][1] >= s[d][0]);
+
+let overlap = (s1: State, s2: State): State =>
+  ["x", "m", "a", "s"].reduce(
+    (s, k) => {
+      s[k] = overlapRange(s1[k], s2[k]);
+      return s;
+    },
+    { next: "overlap" } as State
+  );
+
+let area = (ss: State[]) => ss.map(stateSize).reduce(sum);
+
+let overlaps = (ss: State[]): State[] =>
+  ss
+    .flatMap((s1, i1) =>
+      ss.filter((s2, i2) => i1 < i2).map((s2) => overlap(s1, s2))
+    )
+    .filter(validOverlap);
+
+let overlapPartials = (ss: State[]): State[][] => {
+  let r: State[][] = [];
+  let current = ss;
+  let i = 0;
+  while (current.length > 1) {
+    console.log(i, current.length);
+    current = overlaps(current);
+    r.push(current);
+    if (i++ > 2) break;
   }
+  return r;
 };
 
-let stateOverlap = (s1: State, s2: State): number =>
-  ["x", "m", "a", "s"].map((k) => rangeOverlap(s1[k], s2[k])).reduce(product);
+let contains = (s: State, i: Item): boolean =>
+  DIMs.every((d) => s[d][0] <= i[d] && s[d][1] >= i[d]);
 
-let totalArea = acceptedStates.map(stateSize).reduce(sum);
+let fastEval = (item: Item, accepted: State[]): Outcome =>
+  accepted.find((s) => contains(s, item)) ? "A" : "R";
 
-let overlapArea =
-  acceptedStates
-    .map((s1) =>
-      acceptedStates
-        .filter((s2) => s2 !== s1)
-        .map((s2) => stateOverlap(s1, s2))
-        .reduce(sum)
-    )
-    .reduce(sum) / 2;
+// Run part 1 again using part 2 logic to double-check it
+console.log(
+  "Part 1b",
+  parsedFile.items
+    .map((item) => fastEval(item, acceptedStates))
+    .map((r, i) => (r === "A" ? itemScore(parsedFile.items[i]) : 0))
+    .reduce(sum)
+);
 
-console.log("Part 2", totalArea, overlapArea, totalArea - overlapArea);
+console.log("Part 2", area(acceptedStates));
