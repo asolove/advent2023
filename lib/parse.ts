@@ -73,6 +73,7 @@ export const alphanumeric = plus(alpha, digit);
 export const int: Parser<number> = bind(many1(digit), (chars: string[]) =>
   result(parseInt(chars.join(""), 10))
 );
+export const name = map(many1(alpha), (items) => items.join(""));
 
 export function string<A extends string>(st: A): Parser<A> {
   return function* (input: string) {

@@ -27,10 +27,10 @@ export let isDigit = (c) => c >= "0" && c <= "9";
 
 export let min = (a, b) => Math.min(a, b);
 
-export let tap = (name, value) => {
+export function tap<A>(name: string, value: A): A {
   console.log(name, value);
   return value;
-};
+}
 
 export let max = (a, b) => Math.max(a, b);
 
@@ -67,4 +67,20 @@ export function transpose<A>(items: A[][]): A[][] {
   }
 
   return r;
+}
+
+export function minBy<A>(
+  items: IterableIterator<A>,
+  key: (i: A) => number
+): A | undefined {
+  let minItem: A | undefined = undefined;
+  let minValue: number | undefined = undefined;
+  for (let item of items) {
+    let value = key(item);
+    if (minValue === undefined || value < minValue) {
+      minItem = item;
+      minValue = value;
+    }
+  }
+  return minItem;
 }
