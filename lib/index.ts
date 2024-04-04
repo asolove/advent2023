@@ -84,3 +84,11 @@ export function minBy<A>(
   }
   return minItem;
 }
+
+export function union<A>(s1: Set<A>, s2: Set<A>): Set<A> {
+  return new Set([...s1, ...s2]);
+}
+
+export function isSubset<A>(s1: Set<A>, s2: Set<A>): boolean {
+  return [...s1.values()].every((i) => s2.has(i));
+}

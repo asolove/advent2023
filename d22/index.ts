@@ -1,5 +1,5 @@
 import { Parser, char, int, map, parse, separatedBy, seq } from "../lib/parse";
-import { input, isPresent, tap } from "../lib";
+import { input, isPresent, isSubset, sum, tap, union } from "../lib";
 
 // Representation
 type Pos = { x: number; y: number; z: number };
@@ -111,3 +111,55 @@ let countDisintegratable = (state: State): number => {
 let settledState = settleAll(startState);
 
 console.log("Part 1", countDisintegratable(settledState));
+
+// Part 2: chain reaction via graph traversal
+
+let chainReactionSize = (state: State): number => {
+  let name = (b: Brick): string =>
+    String.fromCharCode(65 + state.bricks.indexOf(b));
+
+  // Build implicit graph representation
+  let supportedBy: Map<Brick, Set<Brick>> = new Map();
+  state.bricks.forEach((b) => {
+    let supports = new Set(
+      b
+        .map((p) => state.positions.get(key(fall(p))))
+        .filter(isPresent)
+        .filter((b2) => b2 !== b)
+    );
+    supportedBy.set(b, supports);
+  });
+
+  let supporting: Map<Brick, Set<Brick>> = new Map(
+    state.bricks.map((b) => [b, new Set()])
+  );
+
+  supportedBy.forEach((set, b1) => {
+    set.forEach((b2) => supporting.get(b2)?.add(b1));
+  });
+
+  // Traverse graph from each block
+  let chainFromBrick = (b: Brick): number => {
+    let toConsider = [...(supporting.get(b) || [])];
+    let fallen = new Set([b]);
+    while (toConsider.length > 0) {
+      let item = toConsider.shift();
+      if (!item) throw "you did a bad";
+
+      let supports = supportedBy.get(item) || new Set();
+      let unsupported = isSubset(supports, fallen);
+      if (unsupported) {
+        fallen.add(item);
+        supporting.get(item)!.forEach((i2) => {
+          toConsider.push(i2);
+        });
+      }
+    }
+    return fallen.size - 1;
+  };
+  let chainSizes = state.bricks.map(chainFromBrick);
+
+  return state.bricks.map(chainFromBrick).reduce(sum, 0);
+};
+
+console.log("Part 2", chainReactionSize(settledState));
