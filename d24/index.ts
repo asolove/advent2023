@@ -50,8 +50,8 @@ let lines = (await inputLines()).map(parseLine);
 
 // Part 1
 
-let MIN = 7;
-let MAX = 27;
+let MIN = 200000000000000;
+let MAX = 400000000000000;
 
 type Result = {
   line: Line;
@@ -59,6 +59,7 @@ type Result = {
   xAtYMax: number;
   yAtXMin: number;
   yAtXMax: number;
+  dydx: number;
 };
 
 let results: Result[] = lines.map((line, id) => ({
@@ -67,6 +68,7 @@ let results: Result[] = lines.map((line, id) => ({
   xAtYMax: inv(line, MAX),
   yAtXMin: fwd(line, MIN),
   yAtXMax: fwd(line, MAX),
+  dydx: line.dy / line.dx,
 }));
 
 let sign = (n: number): number => (n === 0 ? 0 : n > 0 ? +1 : -1);
@@ -76,9 +78,10 @@ let signDiffers = (n1: number, n2: number) => sign(n1) !== sign(n2);
 let intersections = (results: Result[]): number => {
   let count = 0;
 
-  for (let r0 of results) {
-    for (let r1 of results) {
-      if (r0 === r1) continue;
+  for (let i = 0; i < results.length; i++) {
+    let r0 = results[i];
+    for (let j = i + 1; j < results.length; j++) {
+      let r1 = results[j];
 
       // Paths intersect in abstract
       if (
@@ -86,7 +89,15 @@ let intersections = (results: Result[]): number => {
         signDiffers(r0.xAtYMin - r1.xAtYMin, r0.xAtYMax - r1.xAtYMax)
       ) {
         // FIXME: check intersection is forward in time from input
-        count++;
+        let dy = r0.yAtXMin - r1.yAtXMin;
+        let dx = dy / (r1.dydx - r0.dydx);
+        let x = MIN + dx;
+        let y = fwd(r0.line, x);
+
+        let t0 = (x - r0.line.x0) / r0.line.dx;
+        let t1 = (x - r1.line.x0) / r1.line.dx;
+
+        if (t0 >= 0 && t1 >= 0) count++;
       }
     }
   }
